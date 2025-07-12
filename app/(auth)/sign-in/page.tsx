@@ -79,8 +79,7 @@ export default function SignIn() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // Simulate authentication
-      const success = Math.random() > 0.3; // 70% success rate for demo
+      const success = true;
 
       if (success) {
         console.log("Sign in successful:", formData.email);
@@ -108,7 +107,6 @@ export default function SignIn() {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        {/* Header */}
         <div className="text-center">
           <h2 className="text-2xl sm:text-3xl font-medium text-gray-900">
             Welcome back
@@ -118,7 +116,6 @@ export default function SignIn() {
           </p>
         </div>
 
-        {/* Sign In Form */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
           {errors.general && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
@@ -259,7 +256,6 @@ export default function SignIn() {
           </form>
         </div>
 
-        {/* Sign Up Link */}
         <div className="text-center">
           <p className="text-sm sm:text-base text-gray-600">
             Don't have an account?{" "}

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "./Button";
 import notification from "@/public/notification.svg";
+import Link from "next/link";
 
 interface NavbarProps {
   isLoggedIn?: boolean;
@@ -27,7 +28,7 @@ interface Notification {
 }
 
 export default function Navbar({
-  isLoggedIn = true,
+  isLoggedIn = false,
   user = {
     name: "John Doe",
     avatar: "/user_placeholder.svg",
@@ -415,10 +416,14 @@ export default function Navbar({
           ) : (
             <ul className="flex space-x-4 md:space-x-6 lg:space-x-8">
               <li>
-                <Button>SIGNUP</Button>
+                <Link href="/sign-up">
+                  <Button>SIGNUP</Button>
+                </Link>
               </li>
               <li>
-                <Button>LOGIN</Button>
+                <Link href="/sign-in">
+                  <Button>LOGIN</Button>
+                </Link>
               </li>
             </ul>
           )}
@@ -471,10 +476,14 @@ export default function Navbar({
           ) : (
             <ul className="flex flex-col py-4 px-4 space-y-3">
               <li>
-                <Button className="w-full">SIGNUP</Button>
+                <Link href="/sign-up">
+                  <Button className="w-full">SIGNUP</Button>
+                </Link>
               </li>
               <li>
-                <Button className="w-full">LOGIN</Button>
+                <Link href="/sign-in">
+                  <Button className="w-full">LOGIN</Button>
+                </Link>
               </li>
             </ul>
           )}
