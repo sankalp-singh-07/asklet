@@ -1,6 +1,5 @@
-import Image from 'next/image';
+import { redirect } from 'next/navigation';
 
-export default function Home() {
-	console.log(process.env.MONGO_URI);
-	return <h1>Main Branch</h1>;
+export default function RootPage() {
+	redirect('/landing');
 }

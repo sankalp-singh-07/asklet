@@ -1,4 +1,3 @@
-// models/Answer.ts
 import mongoose from 'mongoose';
 
 const answerSchema = new mongoose.Schema({
