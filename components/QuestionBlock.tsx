@@ -23,8 +23,8 @@ export default function QuestionBlock({
 
       <p className="text-gray-700 text-sm mb-3 font-secondary">{description}</p>
 
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-8 mb-4">
+      <div className="flex max-sm:flex-col-reverse gap-8 justify-between items-center">
+        <div className="flex items-center gap-8">
           <div className="flex items-center gap-4 relative">
             <Image
               src={image}
@@ -47,7 +47,7 @@ export default function QuestionBlock({
             ))}
           </div>
         </div>
-        <p className="opacity-60">{reply_num} replies</p>
+        <p className="opacity-60 max-sm:self-end">{reply_num} replies</p>
       </div>
     </div>
   );
