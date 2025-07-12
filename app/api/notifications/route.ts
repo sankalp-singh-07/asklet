@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ConnectToDb } from '@/lib/mongodb';
 import NotificationModel from '@/models/notificationSchema';
 import { getAuthenticatedUser } from '@/middleware';
+import { sendRealtimeNotification } from './stream/route';
 
+// GET notifications
 export async function GET(request: NextRequest) {
 	try {
 		const user = await getAuthenticatedUser(request);
@@ -13,47 +15,22 @@ export async function GET(request: NextRequest) {
 			);
 		}
 
-		const { searchParams } = new URL(request.url);
-		const page = parseInt(searchParams.get('page') || '1');
-		const limit = parseInt(searchParams.get('limit') || '20');
-		const unreadOnly = searchParams.get('unreadOnly') === 'true';
-
 		await ConnectToDb();
 
-		let query: any = { recipient: user._id };
-		if (unreadOnly) {
-			query.isRead = false;
-		}
-
-		const skip = (page - 1) * limit;
-
-		const notifications = await NotificationModel.find(query)
-			.populate('sender', 'username avatar')
-			.populate('relatedQuestion', 'title')
+		const notifications = await NotificationModel.find({
+			recipient: user._id,
+		})
+			.populate('sender', 'username')
 			.sort({ createdAt: -1 })
-			.skip(skip)
-			.limit(limit)
-			.lean();
+			.limit(20);
 
-		const total = await NotificationModel.countDocuments(query);
 		const unreadCount = await NotificationModel.countDocuments({
 			recipient: user._id,
 			isRead: false,
 		});
 
-		return NextResponse.json({
-			notifications,
-			unreadCount,
-			pagination: {
-				current: page,
-				pages: Math.ceil(total / limit),
-				total,
-				hasNext: page < Math.ceil(total / limit),
-				hasPrev: page > 1,
-			},
-		});
+		return NextResponse.json({ notifications, unreadCount });
 	} catch (error) {
-		console.error('Error fetching notifications:', error);
 		return NextResponse.json(
 			{ error: 'Failed to fetch notifications' },
 			{ status: 500 }
@@ -61,6 +38,49 @@ export async function GET(request: NextRequest) {
 	}
 }
 
+// POST - Create notification (for testing)
+export async function POST(request: NextRequest) {
+	try {
+		const user = await getAuthenticatedUser(request);
+		if (!user) {
+			return NextResponse.json(
+				{ error: 'Unauthorized' },
+				{ status: 401 }
+			);
+		}
+
+		const { recipientId, message, type } = await request.json();
+
+		await ConnectToDb();
+
+		const notification = await NotificationModel.create({
+			recipient: recipientId,
+			sender: user._id,
+			type: type || 'answer',
+			message,
+		});
+
+		await notification.populate('sender', 'username');
+
+		// Send real-time notification
+		sendRealtimeNotification(recipientId, {
+			_id: notification._id,
+			message: notification.message,
+			sender: notification.sender,
+			type: notification.type,
+			createdAt: notification.createdAt,
+		});
+
+		return NextResponse.json(notification, { status: 201 });
+	} catch (error) {
+		return NextResponse.json(
+			{ error: 'Failed to create notification' },
+			{ status: 500 }
+		);
+	}
+}
+
+// PUT - Mark as read
 export async function PUT(request: NextRequest) {
 	try {
 		const user = await getAuthenticatedUser(request);
@@ -77,24 +97,20 @@ export async function PUT(request: NextRequest) {
 
 		if (markAll) {
 			await NotificationModel.updateMany(
-				{ recipient: user._id, isRead: false },
+				{ recipient: user._id },
 				{ isRead: true }
 			);
-		} else if (notificationIds && Array.isArray(notificationIds)) {
+		} else if (notificationIds) {
 			await NotificationModel.updateMany(
-				{
-					_id: { $in: notificationIds },
-					recipient: user._id,
-				},
+				{ _id: { $in: notificationIds }, recipient: user._id },
 				{ isRead: true }
 			);
 		}
 
-		return NextResponse.json({ message: 'Notifications marked as read' });
+		return NextResponse.json({ message: 'Marked as read' });
 	} catch (error) {
-		console.error('Error updating notifications:', error);
 		return NextResponse.json(
-			{ error: 'Failed to update notifications' },
+			{ error: 'Failed to update' },
 			{ status: 500 }
 		);
 	}
