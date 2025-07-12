@@ -114,7 +114,7 @@ export default function SignUp() {
           name: formData.name,
           email: formData.email,
         });
-        router.push("/signin?message=account-created");
+        router.push("/sign-in?message=account-created");
       } else {
         setErrors({
           general: "Email already exists. Please try with a different email.",
@@ -449,7 +449,7 @@ export default function SignUp() {
           <p className="text-sm sm:text-base text-gray-600">
             Already have an account?{" "}
             <Link
-              href="/signin"
+              href="/sign-in"
               className="font-medium text-gray-900 hover:text-gray-600 underline transition-colors"
             >
               Sign in here
