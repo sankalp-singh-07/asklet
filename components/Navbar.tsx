@@ -75,6 +75,7 @@ export default function Navbar({
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] =
     useState(false);
+  const navigate = useRouter();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -103,7 +104,7 @@ export default function Navbar({
   };
 
   const handleMyAccount = () => {
-    console.log("Navigate to My Account");
+    navigate.push("/account");
     setIsUserDropdownOpen(false);
   };
 
@@ -240,7 +241,7 @@ export default function Navbar({
               <div className="relative">
                 <button
                   onClick={toggleNotificationDropdown}
-                  className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="relative cursor-pointer p-2 hover:bg-gray-100 rounded-full transition-colors"
                   aria-label="Notifications"
                 >
                   <Image
@@ -287,7 +288,7 @@ export default function Navbar({
                               !notification.isRead ? "bg-blue-50" : ""
                             }`}
                           >
-                            <div className="flex items-start space-x-3">
+                            <div className="flex cursor-pointer items-start space-x-3">
                               {notification.avatar ? (
                                 <Image
                                   src={notification.avatar}
@@ -359,7 +360,7 @@ export default function Navbar({
               <div className="relative">
                 <button
                   onClick={toggleUserDropdown}
-                  className="flex items-center p-1 rounded-full hover:bg-gray-100 transition-colors"
+                  className="flex cursor-pointer items-center p-1 rounded-full hover:bg-gray-100 transition-colors"
                   aria-label="User menu"
                 >
                   <Image
@@ -396,7 +397,7 @@ export default function Navbar({
                     <div className="py-2">
                       <button
                         onClick={handleMyAccount}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="w-full cursor-pointer px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                       >
                         My Account
                       </button>
@@ -432,7 +433,7 @@ export default function Navbar({
         >
           {isLoggedIn ? (
             <div className="py-4 px-4">
-              <div className="flex items-center space-x-3 p-3 border-b border-gray-100 mb-3">
+              <div className="flex cursor-pointer items-center space-x-3 p-3 border-b border-gray-100 mb-3">
                 <Image
                   src={user.avatar}
                   alt={user.name}
@@ -452,7 +453,7 @@ export default function Navbar({
                 <li>
                   <button
                     onClick={handleMyAccount}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                    className="w-full cursor-pointer text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
                   >
                     My Account
                   </button>
