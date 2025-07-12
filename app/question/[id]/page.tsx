@@ -88,7 +88,7 @@ export default function QuestionDetail() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       const newAnswer: Answer = {
-        id: Date.now().toString(),
+        id: `answer_${answers.length + 1}`,
         author: "Your Name",
         avatar: "/user_placeholder.svg",
         content: answerContent,
@@ -110,7 +110,7 @@ export default function QuestionDetail() {
 
   return (
     <div className="min-h-screen bg-white py-6 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <button
           onClick={() => router.back()}
           className="flex items-center text-gray-600 hover:text-gray-900 mb-6 transition-colors cursor-pointer"
