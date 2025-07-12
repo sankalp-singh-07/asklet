@@ -2,7 +2,7 @@
 
 ---
 
-_Problem Statement 1: StackIt – A Minimal Q&A Forum Platform_
+_Problem Statement 1: AskLet – A Minimal Q&A Forum Platform_
 
 # Asklet – A Minimal Q&A Forum
 

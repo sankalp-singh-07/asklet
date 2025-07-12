@@ -37,7 +37,7 @@ export default function SimpleNotifications() {
 
 				// Simple browser notification
 				if (Notification.permission === 'granted') {
-					new Notification('StackIt Notification', {
+					new Notification('Asklet Notification', {
 						body: data.data.message,
 						icon: '/favicon.ico',
 					});

@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/stackit');
+mongoose.connect(process.env.MONGO_URI!);
 
 // Simple schemas (adjust paths as needed)
 const UserSchema = new mongoose.Schema({

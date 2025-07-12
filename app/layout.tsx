@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-	title: 'StackIt - Q&A Platform',
+	title: 'Asklet - Q&A Platform',
 	description: 'Simple Q&A platform',
 };
 
