@@ -22,6 +22,7 @@ interface FormErrors {
   title?: string;
   description?: string;
   tags?: string;
+  general?: string;
 }
 
 export default function PostQuestion() {
@@ -41,6 +42,8 @@ export default function PostQuestion() {
       newErrors.title = "Title is required";
     } else if (formData.title.trim().length < 10) {
       newErrors.title = "Title must be at least 10 characters long";
+    } else if (formData.title.trim().length > 200) {
+      newErrors.title = "Title must be less than 200 characters";
     }
 
     const textContent = formData.description
@@ -54,6 +57,18 @@ export default function PostQuestion() {
 
     if (!formData.tags.trim()) {
       newErrors.tags = "At least one tag is required";
+    } else {
+      const tagArray = formData.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag);
+      if (tagArray.length === 0) {
+        newErrors.tags = "At least one tag is required";
+      } else if (tagArray.length > 5) {
+        newErrors.tags = "Maximum 5 tags allowed";
+      } else if (tagArray.some((tag) => tag.length > 20)) {
+        newErrors.tags = "Each tag must be less than 20 characters";
+      }
     }
 
     setErrors(newErrors);
@@ -73,6 +88,13 @@ export default function PostQuestion() {
         [name]: undefined,
       }));
     }
+
+    if (errors.general) {
+      setErrors((prev) => ({
+        ...prev,
+        general: undefined,
+      }));
+    }
   };
 
   const handleDescriptionChange = (value?: string) => {
@@ -87,6 +109,13 @@ export default function PostQuestion() {
         description: undefined,
       }));
     }
+
+    if (errors.general) {
+      setErrors((prev) => ({
+        ...prev,
+        general: undefined,
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,18 +126,49 @@ export default function PostQuestion() {
     }
 
     setIsSubmitting(true);
+    setErrors({});
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const tagArray = formData.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag);
 
-      console.log("Question submitted:", {
-        ...formData,
-        tags: formData.tags.split(",").map((tag) => tag.trim()),
+      const response = await fetch("/api/questions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: formData.title.trim(),
+          description: formData.description,
+          tags: tagArray,
+        }),
       });
 
-      router.push("/");
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("Question submitted successfully:", data);
+        router.push(`/questions/${data._id}`);
+      } else {
+        if (response.status === 401) {
+          setErrors({
+            general:
+              "You must be logged in to post a question. Please sign in and try again.",
+          });
+        } else {
+          setErrors({
+            general:
+              data.error || "Failed to submit question. Please try again.",
+          });
+        }
+      }
     } catch (error) {
       console.error("Error submitting question:", error);
+      setErrors({
+        general: "Network error. Please check your connection and try again.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -124,6 +184,12 @@ export default function PostQuestion() {
                 POST YOUR QUESTION ON ASKLET
               </h1>
             </div>
+
+            {errors.general && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600">{errors.general}</p>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
@@ -149,10 +215,15 @@ export default function PostQuestion() {
                     }
                   `}
                   placeholder="Enter your question title..."
+                  disabled={isSubmitting}
+                  maxLength={200}
                 />
                 {errors.title && (
                   <p className="mt-2 text-sm text-red-600">{errors.title}</p>
                 )}
+                <p className="mt-2 text-sm text-gray-500">
+                  Be specific and concise (minimum 10 characters)
+                </p>
               </div>
 
               <div>
@@ -184,6 +255,7 @@ export default function PostQuestion() {
                         backgroundColor: "white",
                         color: "black",
                       },
+                      disabled: isSubmitting,
                     }}
                   />
                 </div>
@@ -194,7 +266,7 @@ export default function PostQuestion() {
                 )}
                 <p className="mt-2 text-sm text-gray-500">
                   You can use Markdown formatting (bold, italic, lists, links,
-                  etc.)
+                  etc.). Minimum 20 characters required.
                 </p>
               </div>
 
@@ -221,12 +293,14 @@ export default function PostQuestion() {
                     }
                   `}
                   placeholder="Enter tags separated by commas (e.g., React, JavaScript, CSS)"
+                  disabled={isSubmitting}
                 />
                 {errors.tags && (
                   <p className="mt-2 text-sm text-red-600">{errors.tags}</p>
                 )}
                 <p className="mt-2 text-sm text-gray-500">
-                  Separate multiple tags with commas
+                  Separate multiple tags with commas (maximum 5 tags, each under
+                  20 characters)
                 </p>
               </div>
 
