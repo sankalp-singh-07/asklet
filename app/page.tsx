@@ -3,6 +3,9 @@
 import Button from "@/components/Button";
 import Image from "next/image";
 import down_arrow from "@/public/down_arrow.svg";
+import left_arrow from "@/public/left_arrow.svg";
+import right_arrow from "@/public/right_arrow.svg";
+import ellipsis from "@/public/ellipsis.svg";
 import SearchBar from "@/components/SearchBar";
 import {
   DropdownMenu,
@@ -14,10 +17,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 import QuestionBlock from "@/components/QuestionBlock";
+import Pagination from "@/components/Pagination";
 
 export default function Home() {
   const [selectedFilter, setSelectedFilter] = useState("Newest Unanswered");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = 1;
 
   const handleFilterChange = (filter: string) => {
     setSelectedFilter(filter);
@@ -26,6 +32,11 @@ export default function Home() {
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     console.log("Searching for:", query);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    console.log("Page changed to:", page);
   };
 
   return (
@@ -138,14 +149,26 @@ export default function Home() {
           className="max-w-2xl"
         />
       </section>
+
       <section>
         <QuestionBlock
           title="How to join 2 columns inside a new and pretty good person"
-          description="There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable. If you are going to use a passage of Lorem Ipsum, you need to be sure there isn't anything embarrassing hidden in the middle of text. "
+          description="There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable. If you are going to use a passage of Lorem Ipsum, you need to be sure there isn't anything embarrassing hidden in the middle of text. "
           tags={["React", "JavaScript", "CSS"]}
           author="John Doe"
           image="/user_placeholder.svg"
           reply_num={5}
+        />
+      </section>
+
+      <section className="flex justify-center py-8">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          leftArrowIcon={left_arrow}
+          rightArrowIcon={right_arrow}
+          ellipsisIcon={ellipsis}
         />
       </section>
     </div>
