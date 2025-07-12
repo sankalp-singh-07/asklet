@@ -1,85 +1,219 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "./Button";
 import notification from "@/public/notification.svg";
 import Link from "next/link";
 
-interface NavbarProps {
-  isLoggedIn?: boolean;
-  user?: {
-    name: string;
-    avatar: string;
-    email: string;
-  };
-  notifications?: Notification[];
+interface User {
+  _id: string;
+  username: string;
+  email: string;
+  avatar?: string;
+  reputation: number;
 }
 
 interface Notification {
-  id: string;
-  type: "answer" | "vote" | "comment" | "system";
-  title: string;
+  _id: string;
+  type: "answer" | "vote" | "comment" | "accept" | "system";
   message: string;
-  timestamp: string;
+  sender?: {
+    _id: string;
+    username: string;
+  };
+  createdAt: string;
   isRead: boolean;
-  avatar?: string;
+  relatedQuestion?: string;
+  relatedAnswer?: string;
 }
 
-export default function Navbar({
-  isLoggedIn = false,
-  user = {
-    name: "John Doe",
-    avatar: "/user_placeholder.svg",
-    email: "john.doe@example.com",
-  },
-  notifications = [
-    {
-      id: "1",
-      type: "answer",
-      title: "New answer to your question",
-      message: "Someone answered 'How to join 2 columns in React?'",
-      timestamp: "2 minutes ago",
-      isRead: false,
-      avatar: "/user_placeholder.svg",
-    },
-    {
-      id: "2",
-      type: "vote",
-      title: "Your answer was upvoted",
-      message: "Your answer received 5 upvotes",
-      timestamp: "1 hour ago",
-      isRead: false,
-    },
-    {
-      id: "3",
-      type: "comment",
-      title: "New comment on your answer",
-      message: "Jane Smith commented on your React solution",
-      timestamp: "3 hours ago",
-      isRead: true,
-      avatar: "/user_placeholder.svg",
-    },
-    {
-      id: "4",
-      type: "system",
-      title: "Welcome to Asklet!",
-      message: "Complete your profile to get started",
-      timestamp: "1 day ago",
-      isRead: true,
-    },
-  ],
-}: NavbarProps) {
+interface NotificationResponse {
+  notifications: Notification[];
+  unreadCount: number;
+}
+
+export default function Navbar() {
   const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] =
     useState(false);
-  const navigate = useRouter();
+  const eventSourceRef = useRef<EventSource | null>(null);
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  useEffect(() => {
+    if (isLoggedIn && user) {
+      fetchNotifications();
+      setupRealtimeNotifications();
+    } else {
+      cleanupRealtimeNotifications();
+    }
+
+    return () => {
+      cleanupRealtimeNotifications();
+    };
+  }, [isLoggedIn, user]);
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch("/api/user/me");
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+        setUser(null);
+      }
+    } catch (error) {
+      console.error("Auth check failed:", error);
+      setIsLoggedIn(false);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch("/api/notifications");
+      if (response.ok) {
+        const data: NotificationResponse = await response.json();
+        setNotifications(data.notifications);
+        setUnreadCount(data.unreadCount);
+      }
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    }
+  };
+
+  const setupRealtimeNotifications = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+
+    const eventSource = new EventSource("/api/notifications/stream");
+    eventSourceRef.current = eventSource;
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "notification") {
+          setNotifications((prev) => [data.data, ...prev.slice(0, 19)]);
+          setUnreadCount((prev) => prev + 1);
+        }
+      } catch (error) {
+        console.error("Error parsing SSE data:", error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error("SSE error:", error);
+      eventSource.close();
+    };
+  };
+
+  const cleanupRealtimeNotifications = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/logout", {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        setIsLoggedIn(false);
+        setUser(null);
+        setNotifications([]);
+        setUnreadCount(0);
+        cleanupRealtimeNotifications();
+        setIsUserDropdownOpen(false);
+        setIsMenuOpen(false);
+        router.push("/");
+        router.refresh();
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  const handleMyAccount = () => {
+    router.push("/account");
+    setIsUserDropdownOpen(false);
+    setIsMenuOpen(false);
+  };
+
+  const handleNotificationClick = async (notification: Notification) => {
+    // Mark as read if unread
+    if (!notification.isRead) {
+      try {
+        await fetch("/api/notifications", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            notificationIds: [notification._id],
+          }),
+        });
+
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n._id === notification._id ? { ...n, isRead: true } : n
+          )
+        );
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      } catch (error) {
+        console.error("Failed to mark notification as read:", error);
+      }
+    }
+
+    // Navigate to related content
+    if (notification.relatedQuestion) {
+      router.push(`/questions/${notification.relatedQuestion}`);
+    }
+
+    setIsNotificationDropdownOpen(false);
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await fetch("/api/notifications", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          markAll: true,
+        }),
+      });
+
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Failed to mark all as read:", error);
+    }
+  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+    setIsUserDropdownOpen(false);
+    setIsNotificationDropdownOpen(false);
   };
 
   const handleLogoClick = () => {
@@ -97,24 +231,6 @@ export default function Navbar({
   const toggleNotificationDropdown = () => {
     setIsNotificationDropdownOpen(!isNotificationDropdownOpen);
     setIsUserDropdownOpen(false);
-  };
-
-  const handleLogout = () => {
-    console.log("User logged out");
-    setIsUserDropdownOpen(false);
-  };
-
-  const handleMyAccount = () => {
-    navigate.push("/account");
-    setIsUserDropdownOpen(false);
-  };
-
-  const handleNotificationClick = (notificationId: string) => {
-    console.log("Notification clicked:", notificationId);
-  };
-
-  const markAllAsRead = () => {
-    console.log("Mark all notifications as read");
   };
 
   const getNotificationIcon = (type: string) => {
@@ -135,11 +251,27 @@ export default function Navbar({
             </svg>
           </div>
         );
-      case "vote":
+      case "accept":
         return (
           <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
             <svg
               className="w-4 h-4 text-green-600"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </div>
+        );
+      case "vote":
+        return (
+          <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+            <svg
+              className="w-4 h-4 text-orange-600"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -168,6 +300,7 @@ export default function Navbar({
           </div>
         );
       case "system":
+      default:
         return (
           <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
             <svg
@@ -183,26 +316,46 @@ export default function Navbar({
             </svg>
           </div>
         );
-      default:
-        return (
-          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-            <svg
-              className="w-4 h-4 text-gray-600"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </div>
-        );
     }
   };
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const formatNotificationTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = diffInMs / (1000 * 60);
+    const diffInHours = diffInMs / (1000 * 60 * 60);
+    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+    if (diffInMinutes < 1) {
+      return "just now";
+    } else if (diffInMinutes < 60) {
+      return `${Math.floor(diffInMinutes)}m ago`;
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}h ago`;
+    } else if (diffInDays < 7) {
+      return `${Math.floor(diffInDays)}d ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <nav className="flex justify-between items-center px-4 sm:px-6 md:px-8 lg:px-10 py-4">
+        <h1
+          onClick={handleLogoClick}
+          className="text-xl sm:text-2xl uppercase font-semibold cursor-pointer hover:text-gray-700 transition-colors"
+        >
+          Asklet
+        </h1>
+        <div className="flex items-center space-x-4">
+          <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+          <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <div>
@@ -237,7 +390,7 @@ export default function Navbar({
         </button>
 
         <div className="hidden sm:flex items-center">
-          {isLoggedIn ? (
+          {isLoggedIn && user ? (
             <div className="flex items-center space-x-4 md:space-x-6">
               <div className="relative">
                 <button
@@ -281,37 +434,33 @@ export default function Navbar({
                       {notifications.length > 0 ? (
                         notifications.map((notification) => (
                           <div
-                            key={notification.id}
+                            key={notification._id}
                             onClick={() =>
-                              handleNotificationClick(notification.id)
+                              handleNotificationClick(notification)
                             }
                             className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0 ${
                               !notification.isRead ? "bg-blue-50" : ""
                             }`}
                           >
                             <div className="flex cursor-pointer items-start space-x-3">
-                              {notification.avatar ? (
-                                <Image
-                                  src={notification.avatar}
-                                  alt="User"
-                                  width={32}
-                                  height={32}
-                                  className="w-8 h-8 rounded-full border border-gray-300"
-                                />
-                              ) : (
-                                getNotificationIcon(notification.type)
-                              )}
-
+                              {getNotificationIcon(notification.type)}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between">
                                   <p
-                                    className={`text-sm font-medium ${
+                                    className={`text-sm ${
                                       !notification.isRead
-                                        ? "text-gray-900"
+                                        ? "font-medium text-gray-900"
                                         : "text-gray-700"
                                     }`}
                                   >
-                                    {notification.title}
+                                    {notification.sender?.username &&
+                                      notification.type === "answer" &&
+                                      `${notification.sender.username} answered your question`}
+                                    {notification.sender?.username &&
+                                      notification.type === "accept" &&
+                                      `Your answer was accepted`}
+                                    {notification.type === "system" &&
+                                      "System notification"}
                                   </p>
                                   {!notification.isRead && (
                                     <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
@@ -321,7 +470,9 @@ export default function Navbar({
                                   {notification.message}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-2">
-                                  {notification.timestamp}
+                                  {formatNotificationTime(
+                                    notification.createdAt
+                                  )}
                                 </p>
                               </div>
                             </div>
@@ -346,14 +497,6 @@ export default function Navbar({
                         </div>
                       )}
                     </div>
-
-                    {notifications.length > 0 && (
-                      <div className="p-3 border-t border-gray-100 bg-gray-50 rounded-b-lg">
-                        <button className="w-full text-center text-sm text-gray-600 hover:text-gray-800 transition-colors">
-                          View all notifications
-                        </button>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -365,8 +508,8 @@ export default function Navbar({
                   aria-label="User menu"
                 >
                   <Image
-                    src={user.avatar}
-                    alt={user.name}
+                    src={user.avatar || "/user_placeholder.svg"}
+                    alt={user.username}
                     width={36}
                     height={36}
                     className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-gray-300"
@@ -378,18 +521,21 @@ export default function Navbar({
                     <div className="p-4 border-b border-gray-100">
                       <div className="flex items-center space-x-3">
                         <Image
-                          src={user.avatar}
-                          alt={user.name}
+                          src={user.avatar || "/user_placeholder.svg"}
+                          alt={user.username}
                           width={40}
                           height={40}
                           className="w-10 h-10 rounded-full border border-gray-300"
                         />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate">
-                            {user.name}
+                            {user.username}
                           </p>
                           <p className="text-xs text-gray-500 truncate">
                             {user.email}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {user.reputation} reputation
                           </p>
                         </div>
                       </div>
@@ -436,21 +582,24 @@ export default function Navbar({
               : "opacity-0 -translate-y-4 invisible"
           }`}
         >
-          {isLoggedIn ? (
+          {isLoggedIn && user ? (
             <div className="py-4 px-4">
               <div className="flex cursor-pointer items-center space-x-3 p-3 border-b border-gray-100 mb-3">
                 <Image
-                  src={user.avatar}
-                  alt={user.name}
+                  src={user.avatar || "/user_placeholder.svg"}
+                  alt={user.username}
                   width={40}
                   height={40}
                   className="w-10 h-10 rounded-full border border-gray-300"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
-                    {user.name}
+                    {user.username}
                   </p>
                   <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  <p className="text-xs text-gray-500">
+                    {user.reputation} reputation
+                  </p>
                 </div>
               </div>
 
