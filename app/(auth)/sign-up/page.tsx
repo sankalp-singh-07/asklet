@@ -6,14 +6,14 @@ import Link from "next/link";
 import Button from "@/components/Button";
 
 interface FormData {
-  name: string;
+  username: string;
   email: string;
   password: string;
   confirmPassword: string;
 }
 
 interface FormErrors {
-  name?: string;
+  username?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
@@ -23,7 +23,7 @@ interface FormErrors {
 export default function SignUp() {
   const router = useRouter();
   const [formData, setFormData] = useState<FormData>({
-    name: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -37,10 +37,15 @@ export default function SignUp() {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Full name is required";
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = "Name must be at least 2 characters long";
+    if (!formData.username.trim()) {
+      newErrors.username = "Username is required";
+    } else if (formData.username.trim().length < 3) {
+      newErrors.username = "Username must be at least 3 characters long";
+    } else if (formData.username.trim().length > 40) {
+      newErrors.username = "Username must be less than 40 characters";
+    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username.trim())) {
+      newErrors.username =
+        "Username can only contain letters, numbers, and underscores";
     }
 
     if (!formData.email.trim()) {
@@ -51,8 +56,8 @@ export default function SignUp() {
 
     if (!formData.password.trim()) {
       newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters long";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters long";
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
       newErrors.password =
         "Password must contain at least one uppercase letter, one lowercase letter, and one number";
@@ -105,25 +110,32 @@ export default function SignUp() {
     setIsSubmitting(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: formData.username.trim(),
+          email: formData.email.trim(),
+          password: formData.password,
+        }),
+      });
 
-      const success = true;
+      const data = await response.json();
 
-      if (success) {
-        console.log("Sign up successful:", {
-          name: formData.name,
-          email: formData.email,
-        });
+      if (response.ok) {
+        console.log("Sign up successful:", data);
         router.push("/sign-in?message=account-created");
       } else {
         setErrors({
-          general: "Email already exists. Please try with a different email.",
+          general: data.error || "Registration failed. Please try again.",
         });
       }
     } catch (error) {
       console.error("Sign up error:", error);
       setErrors({
-        general: "Something went wrong. Please try again.",
+        general: "Network error. Please check your connection and try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -136,6 +148,7 @@ export default function SignUp() {
 
     let strength = 0;
     const checks = [
+      password.length >= 6,
       password.length >= 8,
       /[a-z]/.test(password),
       /[A-Z]/.test(password),
@@ -145,8 +158,15 @@ export default function SignUp() {
 
     strength = checks.filter(Boolean).length;
 
-    const strengthTexts = ["", "Very Weak", "Weak", "Fair", "Good", "Strong"];
-
+    const strengthTexts = [
+      "",
+      "Very Weak",
+      "Weak",
+      "Fair",
+      "Good",
+      "Strong",
+      "Very Strong",
+    ];
     const strengthColors = [
       "",
       "text-red-500",
@@ -154,6 +174,7 @@ export default function SignUp() {
       "text-yellow-500",
       "text-blue-500",
       "text-green-500",
+      "text-green-600",
     ];
 
     return {
@@ -187,27 +208,27 @@ export default function SignUp() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label
-                htmlFor="name"
+                htmlFor="username"
                 className="block text-sm font-medium text-gray-700 mb-3"
               >
-                Full Name
+                Username
               </label>
               <input
                 type="text"
-                id="name"
-                name="name"
-                value={formData.name}
+                id="username"
+                name="username"
+                value={formData.username}
                 onChange={handleInputChange}
                 className={`w-full px-0 py-3 text-base bg-transparent border-0 border-b-2 focus:outline-none focus:ring-0 transition-colors ${
-                  errors.name
+                  errors.username
                     ? "border-red-500 focus:border-red-500"
                     : "border-gray-300 focus:border-gray-900"
                 }`}
-                placeholder="Enter your full name"
+                placeholder="Enter your username"
                 disabled={isSubmitting}
               />
-              {errors.name && (
-                <p className="mt-2 text-sm text-red-600">{errors.name}</p>
+              {errors.username && (
+                <p className="mt-2 text-sm text-red-600">{errors.username}</p>
               )}
             </div>
 
@@ -308,16 +329,17 @@ export default function SignUp() {
                     <div className="flex-1 h-1 bg-gray-200 rounded">
                       <div
                         className={`h-1 rounded transition-all duration-300 ${
-                          passwordStrength.strength === 1
-                            ? "bg-red-500 w-1/5"
-                            : passwordStrength.strength === 2
-                            ? "bg-red-400 w-2/5"
+                          passwordStrength.strength <= 2
+                            ? "bg-red-500"
                             : passwordStrength.strength === 3
-                            ? "bg-yellow-500 w-3/5"
+                            ? "bg-yellow-500"
                             : passwordStrength.strength === 4
-                            ? "bg-blue-500 w-4/5"
-                            : "bg-green-500 w-full"
+                            ? "bg-blue-500"
+                            : "bg-green-500"
                         }`}
+                        style={{
+                          width: `${(passwordStrength.strength / 6) * 100}%`,
+                        }}
                       />
                     </div>
                     <span className={`text-xs ${passwordStrength.color}`}>
