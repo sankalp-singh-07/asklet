@@ -15,206 +15,42 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import QuestionBlock from "@/components/QuestionBlock";
 import Pagination from "@/components/Pagination";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 interface Question {
-  id: string;
+  _id: string;
   title: string;
   description: string;
   tags: string[];
-  author: string;
-  image: string;
-  reply_num: number;
-  vote_count: number;
-  created_at: string;
-  last_active: string;
-  is_answered: boolean;
+  author: {
+    username: string;
+    reputation: number;
+    avatar?: string;
+  };
+  answerCount: number;
+  voteScore: number;
+  views: number;
+  createdAt: string;
+  updatedAt: string;
+  acceptedAnswer?: string;
 }
 
-const generateMockQuestions = (): Question[] => {
-  const authors = [
-    "John Doe",
-    "Jane Smith",
-    "Bob Johnson",
-    "Alice Brown",
-    "Charlie Wilson",
-    "Diana Prince",
-    "Frank Miller",
-    "Grace Davis",
-  ];
-  const tags = [
-    ["React", "JavaScript", "TypeScript"],
-    ["Node.js", "Express", "MongoDB"],
-    ["Python", "Django", "PostgreSQL"],
-    ["Next.js", "React", "CSS"],
-    ["Vue.js", "Nuxt.js", "JavaScript"],
-    ["Angular", "TypeScript", "RxJS"],
-    ["Laravel", "PHP", "MySQL"],
-    ["Ruby", "Rails", "SQLite"],
-  ];
+interface PaginationData {
+  current: number;
+  pages: number;
+  total: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
 
-  const titleTemplates = [
-    "How to implement authentication in",
-    "Best practices for handling state in",
-    "Performance optimization techniques for",
-    "How to set up testing in",
-    "Debugging memory leaks in",
-    "How to deploy applications with",
-    "Database design patterns for",
-    "API integration strategies in",
-    "Error handling best practices in",
-    "How to scale applications built with",
-  ];
-
-  const questions: Question[] = [];
-
-  for (let i = 1; i <= 157; i++) {
-    const randomTags = tags[Math.floor(Math.random() * tags.length)];
-    const randomAuthor = authors[Math.floor(Math.random() * authors.length)];
-    const randomTemplate =
-      titleTemplates[Math.floor(Math.random() * titleTemplates.length)];
-    const mainTech = randomTags[0];
-
-    const daysAgo = Math.floor(Math.random() * 30);
-    const hoursAgo = Math.floor(Math.random() * 24);
-    const createdAt = new Date(
-      Date.now() - daysAgo * 24 * 60 * 60 * 1000 - hoursAgo * 60 * 60 * 1000
-    );
-    const lastActiveOffset = Math.floor(
-      Math.random() * daysAgo * 24 * 60 * 60 * 1000
-    );
-    const lastActive = new Date(createdAt.getTime() + lastActiveOffset);
-
-    questions.push({
-      id: `question-${i}`,
-      title: `${randomTemplate} ${mainTech}`,
-      description: `I'm working on a project using ${randomTags.join(
-        ", "
-      )} and I'm facing some challenges. I've tried various approaches but can't seem to get the desired results. Any help would be appreciated. Here are the specific details of what I'm trying to achieve and the issues I'm encountering.`,
-      tags: randomTags,
-      author: randomAuthor,
-      image: "/user_placeholder.svg",
-      reply_num: Math.floor(Math.random() * 25),
-      vote_count: Math.floor(Math.random() * 50) - 10,
-      created_at: createdAt.toISOString(),
-      last_active: lastActive.toISOString(),
-      is_answered: Math.random() > 0.3,
-    });
-  }
-
-  return questions;
-};
-
-const mockAPI = {
-  async getQuestions(
-    page: number,
-    filter: string,
-    search: string
-  ): Promise<{
-    questions: Question[];
-    totalCount: number;
-    totalPages: number;
-  }> {
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    const allQuestions = generateMockQuestions();
-    let filteredQuestions = [...allQuestions];
-
-    if (search.trim()) {
-      const searchLower = search.toLowerCase();
-      filteredQuestions = filteredQuestions.filter(
-        (q) =>
-          q.title.toLowerCase().includes(searchLower) ||
-          q.description.toLowerCase().includes(searchLower)
-      );
-    }
-
-    switch (filter) {
-      case "Newest Unanswered":
-        filteredQuestions = filteredQuestions
-          .filter((q) => !q.is_answered)
-          .sort(
-            (a, b) =>
-              new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime()
-          );
-        break;
-      case "Most Votes":
-        filteredQuestions = filteredQuestions.sort(
-          (a, b) => b.vote_count - a.vote_count
-        );
-        break;
-      case "Most Answers":
-        filteredQuestions = filteredQuestions.sort(
-          (a, b) => b.reply_num - a.reply_num
-        );
-        break;
-      case "Recently Active":
-        filteredQuestions = filteredQuestions.sort(
-          (a, b) =>
-            new Date(b.last_active).getTime() -
-            new Date(a.last_active).getTime()
-        );
-        break;
-      case "Oldest Unanswered":
-        filteredQuestions = filteredQuestions
-          .filter((q) => !q.is_answered)
-          .sort(
-            (a, b) =>
-              new Date(a.created_at).getTime() -
-              new Date(b.created_at).getTime()
-          );
-        break;
-      case "My Questions":
-        filteredQuestions = filteredQuestions
-          .filter((q) => q.author === "John Doe")
-          .sort(
-            (a, b) =>
-              new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime()
-          );
-        break;
-      default:
-        filteredQuestions = filteredQuestions.sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-    }
-
-    const questionsPerPage = 20;
-    const totalCount = filteredQuestions.length;
-    const totalPages = Math.ceil(totalCount / questionsPerPage);
-    const startIndex = (page - 1) * questionsPerPage;
-    const endIndex = startIndex + questionsPerPage;
-    const paginatedQuestions = filteredQuestions.slice(startIndex, endIndex);
-
-    return {
-      questions: paginatedQuestions,
-      totalCount,
-      totalPages,
-    };
-  },
-};
-
-const LoadingSpinner = () => (
-  <div className="flex items-center justify-center py-12">
-    <div className="flex items-center space-x-2">
-      <div className="w-4 h-4 bg-gray-900 rounded-full animate-bounce"></div>
-      <div
-        className="w-4 h-4 bg-gray-900 rounded-full animate-bounce"
-        style={{ animationDelay: "0.1s" }}
-      ></div>
-      <div
-        className="w-4 h-4 bg-gray-900 rounded-full animate-bounce"
-        style={{ animationDelay: "0.2s" }}
-      ></div>
-    </div>
-  </div>
-);
+interface QuestionsResponse {
+  questions: Question[];
+  pagination: PaginationData;
+}
 
 const LoadingSkeleton = () => (
   <div className="space-y-6">
@@ -239,30 +75,48 @@ export default function Home() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [selectedFilter, setSelectedFilter] = useState("Newest Unanswered");
+  const [selectedFilter, setSelectedFilter] = useState("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
+  const [pagination, setPagination] = useState<PaginationData>({
+    current: 1,
+    pages: 1,
+    total: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string>("");
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
     null
   );
 
+  const filterOptions = [
+    { key: "newest", label: "Newest", desc: "Most recent questions" },
+    { key: "oldest", label: "Oldest", desc: "Oldest questions first" },
+    {
+      key: "votes",
+      label: "Most Votes",
+      desc: "Questions with highest vote count",
+    },
+    { key: "views", label: "Most Views", desc: "Questions with most views" },
+  ];
+
   useEffect(() => {
-    const filter = searchParams.get("filter") || "Newest Unanswered";
+    const filter = searchParams.get("sort") || "newest";
     const search = searchParams.get("search") || "";
+    const tag = searchParams.get("tag") || "";
     const page = parseInt(searchParams.get("page") || "1");
 
     setSelectedFilter(filter);
-    setSearchQuery(search);
+    setSearchQuery(search || tag);
     setCurrentPage(page);
   }, [searchParams]);
 
   const updateURL = (filter: string, search: string, page: number) => {
     const params = new URLSearchParams();
-    if (filter !== "Newest Unanswered") params.set("filter", filter);
+    if (filter !== "newest") params.set("sort", filter);
     if (search) params.set("search", search);
     if (page !== 1) params.set("page", page.toString());
 
@@ -276,14 +130,41 @@ export default function Home() {
     page: number
   ) => {
     setIsLoading(true);
+    setError("");
+
     try {
-      const result = await mockAPI.getQuestions(page, filter, search);
-      setQuestions(result.questions);
-      setTotalPages(result.totalPages);
-      setTotalCount(result.totalCount);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: "10",
+        sort: filter,
+      });
+
+      if (search.trim()) {
+        params.set("search", search.trim());
+      }
+
+      const response = await fetch(`/api/questions?${params.toString()}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: QuestionsResponse = await response.json();
+
+      setQuestions(data.questions);
+      setPagination(data.pagination);
       updateURL(filter, search, page);
     } catch (error) {
       console.error("Error fetching questions:", error);
+      setError("Failed to load questions. Please try again.");
+      setQuestions([]);
+      setPagination({
+        current: 1,
+        pages: 1,
+        total: 0,
+        hasNext: false,
+        hasPrev: false,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -330,16 +211,39 @@ export default function Home() {
   const getResultsSummary = () => {
     if (isLoading) return "";
 
-    const start = (currentPage - 1) * 20 + 1;
-    const end = Math.min(currentPage * 20, totalCount);
+    const start = (pagination.current - 1) * 10 + 1;
+    const end = Math.min(pagination.current * 10, pagination.total);
 
-    let summary = `Showing ${start}-${end} of ${totalCount} questions`;
+    let summary = `Showing ${start}-${end} of ${pagination.total} questions`;
 
     if (searchQuery) {
       summary += ` for "${searchQuery}"`;
     }
 
     return summary;
+  };
+
+  const getSelectedFilterLabel = () => {
+    const filter = filterOptions.find((f) => f.key === selectedFilter);
+    return filter ? filter.label : "Newest";
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInHours = diffInMs / (1000 * 60 * 60);
+    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+    if (diffInHours < 1) {
+      return "just now";
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}h ago`;
+    } else if (diffInDays < 7) {
+      return `${Math.floor(diffInDays)}d ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
   };
 
   return (
@@ -355,7 +259,9 @@ export default function Home() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="flex justify-center md:justify-between w-full md:w-auto min-w-[200px] text-sm sm:text-base">
-                <span className="mr-2 truncate">{selectedFilter}</span>
+                <span className="mr-2 truncate">
+                  {getSelectedFilterLabel()}
+                </span>
                 <Image
                   src={down_arrow}
                   alt=""
@@ -375,42 +281,17 @@ export default function Home() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="my-1 bg-gray-100" />
 
-              {[
-                {
-                  key: "Newest Unanswered",
-                  desc: "Most recent questions without answers",
-                },
-                {
-                  key: "Most Votes",
-                  desc: "Questions with highest vote count",
-                },
-                { key: "Most Answers", desc: "Questions with most responses" },
-                {
-                  key: "Recently Active",
-                  desc: "Questions with recent activity",
-                },
-                {
-                  key: "Oldest Unanswered",
-                  desc: "Questions needing attention",
-                },
-                { key: "My Questions", desc: "Questions you've asked" },
-              ].map((filter, index) => (
-                <div key={filter.key}>
-                  {index === 4 && (
-                    <DropdownMenuSeparator className="my-1 bg-gray-100" />
-                  )}
-                  <DropdownMenuItem
-                    className="px-3 py-2 text-xs sm:text-sm cursor-pointer hover:bg-gray-100 rounded-md transition-colors focus:bg-gray-100"
-                    onClick={() => handleFilterChange(filter.key)}
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-medium">{filter.key}</span>
-                      <span className="text-xs text-gray-500">
-                        {filter.desc}
-                      </span>
-                    </div>
-                  </DropdownMenuItem>
-                </div>
+              {filterOptions.map((filter) => (
+                <DropdownMenuItem
+                  key={filter.key}
+                  className="px-3 py-2 text-xs sm:text-sm cursor-pointer hover:bg-gray-100 rounded-md transition-colors focus:bg-gray-100"
+                  onClick={() => handleFilterChange(filter.key)}
+                >
+                  <div className="flex flex-col">
+                    <span className="font-medium">{filter.label}</span>
+                    <span className="text-xs text-gray-500">{filter.desc}</span>
+                  </div>
+                </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -422,7 +303,7 @@ export default function Home() {
           />
         </section>
 
-        {!isLoading && (
+        {!isLoading && !error && (
           <div className="flex justify-between items-center text-sm text-gray-600 border-b border-gray-200 pb-4">
             <span>{getResultsSummary()}</span>
             {searchQuery && (
@@ -436,19 +317,34 @@ export default function Home() {
           </div>
         )}
 
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-600">{error}</p>
+            <button
+              onClick={() =>
+                fetchQuestions(selectedFilter, searchQuery, currentPage)
+              }
+              className="mt-2 text-sm text-red-700 hover:text-red-900 underline"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
         <section className="space-y-4 sm:space-y-6">
           {isLoading ? (
             <LoadingSkeleton />
           ) : questions.length > 0 ? (
             questions.map((question) => (
               <QuestionBlock
-                key={question.id}
+                key={question._id}
+                id={question._id}
                 title={question.title}
                 description={question.description}
                 tags={question.tags}
-                author={question.author}
-                image={question.image}
-                reply_num={question.reply_num}
+                author={question.author.username}
+                image={question.author.avatar || "/user_placeholder.svg"}
+                reply_num={question.answerCount}
               />
             ))
           ) : (
@@ -469,17 +365,20 @@ export default function Home() {
               <p className="text-gray-600">
                 {searchQuery
                   ? `No questions match "${searchQuery}". Try adjusting your search terms.`
-                  : "No questions match the current filter. Try selecting a different filter."}
+                  : "No questions available yet. Be the first to ask a question!"}
               </p>
+              <Link href="/post-question">
+                <Button className="mt-4">Ask the First Question</Button>
+              </Link>
             </div>
           )}
         </section>
 
-        {!isLoading && totalPages > 1 && (
+        {!isLoading && !error && pagination.pages > 1 && (
           <section className="flex justify-center py-6 sm:py-8">
             <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
+              currentPage={pagination.current}
+              totalPages={pagination.pages}
               onPageChange={handlePageChange}
               leftArrowIcon={left_arrow}
               rightArrowIcon={right_arrow}

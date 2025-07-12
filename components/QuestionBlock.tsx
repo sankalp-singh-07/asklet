@@ -7,6 +7,7 @@ type QuestionBlockProps = {
   author: string;
   image: string;
   reply_num: number;
+  id: string;
 };
 
 export default function QuestionBlock({
@@ -16,6 +17,7 @@ export default function QuestionBlock({
   author,
   image,
   reply_num,
+  id,
 }: QuestionBlockProps) {
   return (
     <div className="mt-2 flex flex-col gap-1">
