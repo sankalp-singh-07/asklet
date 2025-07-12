@@ -30,7 +30,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${dmSans.variable}`}>
       <body className="antialiased font-sans">
         <Navbar />
-        <main className="px-4 max-w-6xl mx-auto mt-6">{children}</main>
+        <main className="px-4 sm:px-6 md:px-8 lg:px-10 mt-5">{children}</main>
       </body>
     </html>
   );

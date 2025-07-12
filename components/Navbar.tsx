@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Button from "./Button";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -38,14 +39,10 @@ export default function Navbar() {
 
         <ul className="hidden sm:flex space-x-4 md:space-x-6 lg:space-x-8">
           <li>
-            <button className="px-6 sm:px-8 md:px-10 lg:px-11 py-1 border border-black font-medium cursor-pointer hover:bg-gray-100 transition-all duration-300 text-sm sm:text-base">
-              SIGNUP
-            </button>
+            <Button>SIGNUP</Button>
           </li>
           <li>
-            <button className="px-6 sm:px-8 md:px-10 lg:px-11 py-1 border border-black font-medium cursor-pointer hover:bg-gray-100 transition-all duration-300 text-sm sm:text-base">
-              LOGIN
-            </button>
+            <Button>LOGIN</Button>
           </li>
         </ul>
 
@@ -58,14 +55,10 @@ export default function Navbar() {
         >
           <ul className="flex flex-col py-4 px-4 space-y-3">
             <li>
-              <button className="w-full px-6 py-3 border border-black font-medium cursor-pointer hover:bg-gray-100 transition-all duration-300 text-sm">
-                SIGNUP
-              </button>
+              <Button className="w-full">SIGNUP</Button>
             </li>
             <li>
-              <button className="w-full px-6 py-3 border border-black font-medium cursor-pointer hover:bg-gray-100 transition-all duration-300 text-sm">
-                LOGIN
-              </button>
+              <Button className="w-full">LOGIN</Button>
             </li>
           </ul>
         </div>
