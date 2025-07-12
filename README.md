@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## 🚀 Selected Problem Statement
 
-## Getting Started
+---
 
-First, run the development server:
+_Problem Statement 1: StackIt – A Minimal Q&A Forum Platform_
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+# Asklet – A Minimal Q&A Forum
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Asklet is a minimalistic Question-and-Answer (Q&A) forum platform developed as part of the Odoo Hackathon '25. It aims to foster structured knowledge sharing and collaborative learning in a clean, user-friendly environment.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🔑 Core Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 👥 User Roles
 
-## Learn More
+| Role  | Permissions                                    |
+| ----- | ---------------------------------------------- |
+| Guest | View all questions and answers                 |
+| User  | Register, log in, post questions/answers, vote |
+| Admin | Moderate content                               |
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 📝 Question Posting
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+-   Title (short and descriptive)
+-   Description (Rich Text Editor)
+-   Tags (multi-select input, e.g., React, JWT, etc.)
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 🧰 Rich Text Editor Functionalities
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+-   Bold, Italic, Strikethrough
+-   Numbered & Bullet Lists
+-   Emojis 😀
+-   Hyperlinks
+-   Image Upload
+-   Text Alignment (Left, Center, Right)
+
+---
+
+### 💬 Answering & Voting
+
+-   Users can post answers using the rich text editor
+-   Logged-in users can upvote/downvote answers
+-   Question owners can mark one answer as accepted
+
+---
+
+### 🔔 Notification System
+
+-   Bell icon in the top navigation bar
+-   Notifications when:
+    -   Someone answers their question
+    -   Someone comments on their answer
+    -   Someone mentions them using @username
+-   Unread notification count
+-   Dropdown to view recent notifications
+
+---
+
+## 🔧 Technologies Used
+
+-   _Frontend:_ Next.js
+-   _Backend:_ Next.js
+-   _Database:_ Prisma
+-   _Authentication:_ NextAuth.js
+-   _Styling:_ TailwindCSS
+
+---
+
+## 🛠 Setup Instructions
+
+bash
+
+# Clone the repository
+
+git clone https://github.com/sankalp-singh-07/asklet.git
+cd asklet
+
+# Install dependencies
+
+npm install # or pip install -r requirements.txt if backend is Python
+
+# Start the dev server
+
+npm start
