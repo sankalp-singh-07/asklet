@@ -19,7 +19,9 @@ export default function QuestionBlock({
 }: QuestionBlockProps) {
   return (
     <div className="mt-2 flex flex-col gap-1">
-      <h2 className="text-xl font-semibold text-gray-900 mb-2">{title}</h2>
+      <h2 className="text-xl font-semibold text-gray-900 mb-2 cursor-pointer hover:opacity-70 transition-opacity duration-300">
+        {title}
+      </h2>
 
       <p className="text-gray-700 text-sm mb-3 font-secondary">{description}</p>
 

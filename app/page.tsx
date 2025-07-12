@@ -18,6 +18,7 @@ import {
 import { useState } from "react";
 import QuestionBlock from "@/components/QuestionBlock";
 import Pagination from "@/components/Pagination";
+import Link from "next/link";
 
 export default function Home() {
   const [selectedFilter, setSelectedFilter] = useState("Newest Unanswered");
@@ -43,9 +44,11 @@ export default function Home() {
     <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         <section className="flex flex-col md:flex-row lg:flex-row items-start sm:items-center lg:items-center gap-3 sm:gap-4">
-          <Button className="w-full md:w-auto text-sm sm:text-base">
-            Ask New Question
-          </Button>
+          <Link href="/post-question">
+            <Button className="w-full md:w-auto text-sm sm:text-base">
+              Ask New Question
+            </Button>
+          </Link>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
