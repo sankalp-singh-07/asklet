@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/Button";
 
@@ -16,8 +16,16 @@ interface FormErrors {
   general?: string;
 }
 
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+}
+
 export default function SignIn() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState<FormData>({
     email: "",
     password: "",
@@ -25,6 +33,15 @@ export default function SignIn() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  useEffect(() => {
+    const message = searchParams.get("message");
+    if (message === "account-created") {
+      setSuccessMessage("Account created successfully! Please sign in.");
+    }
+  }, [searchParams]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -65,6 +82,10 @@ export default function SignIn() {
         general: undefined,
       }));
     }
+
+    if (successMessage) {
+      setSuccessMessage("");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,24 +96,46 @@ export default function SignIn() {
     }
 
     setIsSubmitting(true);
+    setErrors({});
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email.trim(),
+          password: formData.password,
+        }),
+      });
 
-      const success = true;
+      const data = await response.json();
 
-      if (success) {
-        console.log("Sign in successful:", formData.email);
-        router.push("/");
+      if (response.ok) {
+        console.log("Sign in successful:", data.user);
+
+        if (rememberMe && data.user) {
+          localStorage.setItem(
+            "userPreferences",
+            JSON.stringify({
+              rememberEmail: formData.email,
+            })
+          );
+        }
+
+        const redirectTo = searchParams.get("redirect") || "/";
+        router.push(redirectTo);
+        router.refresh();
       } else {
         setErrors({
-          general: "Invalid email or password. Please try again.",
+          general: data.error || "Invalid email or password. Please try again.",
         });
       }
     } catch (error) {
       console.error("Sign in error:", error);
       setErrors({
-        general: "Something went wrong. Please try again.",
+        general: "Network error. Please check your connection and try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -100,9 +143,23 @@ export default function SignIn() {
   };
 
   const handleForgotPassword = () => {
-    console.log("Forgot password");
     router.push("/forgot-password");
   };
+
+  useEffect(() => {
+    const savedPreferences = localStorage.getItem("userPreferences");
+    if (savedPreferences) {
+      try {
+        const prefs = JSON.parse(savedPreferences);
+        if (prefs.rememberEmail) {
+          setFormData((prev) => ({ ...prev, email: prefs.rememberEmail }));
+          setRememberMe(true);
+        }
+      } catch (error) {
+        console.error("Error loading saved preferences:", error);
+      }
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
@@ -117,6 +174,12 @@ export default function SignIn() {
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 sm:p-8">
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
+              <p className="text-sm text-green-600">{successMessage}</p>
+            </div>
+          )}
+
           {errors.general && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
               <p className="text-sm text-red-600">{errors.general}</p>
@@ -144,6 +207,7 @@ export default function SignIn() {
                 }`}
                 placeholder="Enter your email"
                 disabled={isSubmitting}
+                autoComplete="email"
               />
               {errors.email && (
                 <p className="mt-2 text-sm text-red-600">{errors.email}</p>
@@ -171,12 +235,14 @@ export default function SignIn() {
                   }`}
                   placeholder="Enter your password"
                   disabled={isSubmitting}
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-0 top-3 text-gray-500 hover:text-gray-700 transition-colors"
                   disabled={isSubmitting}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
                     <svg
@@ -226,7 +292,10 @@ export default function SignIn() {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded"
+                  disabled={isSubmitting}
                 />
                 <label
                   htmlFor="remember-me"
