@@ -63,7 +63,7 @@ Asklet is a minimalistic Question-and-Answer (Q&A) forum platform developed as p
 
 -   _Frontend:_ Next.js
 -   _Backend:_ Next.js
--   _Database:_ Prisma
+-   _Database:_ PostgreSQL
 -   _Authentication:_ NextAuth.js
 -   _Styling:_ TailwindCSS
 
