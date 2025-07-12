@@ -116,7 +116,7 @@ export default function PostQuestion() {
 
   return (
     <div className="min-h-screen py-8 px-0 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="bg-white rounded-lg">
           <div className="px-6 py-8 sm:px-8 lg:px-12">
             <div className="text-center mb-12">
