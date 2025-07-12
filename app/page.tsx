@@ -13,6 +13,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import QuestionBlock from "@/components/QuestionBlock";
 
 export default function Home() {
   const [selectedFilter, setSelectedFilter] = useState("Newest Unanswered");
@@ -29,7 +30,7 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
+      <section className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
         <Button>Ask New Question</Button>
 
         <DropdownMenu>
@@ -136,7 +137,17 @@ export default function Home() {
           onSearch={handleSearch}
           className="max-w-2xl"
         />
-      </div>
+      </section>
+      <section>
+        <QuestionBlock
+          title="How to join 2 columns inside a new and pretty good person"
+          description="There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable. If you are going to use a passage of Lorem Ipsum, you need to be sure there isn't anything embarrassing hidden in the middle of text. "
+          tags={["React", "JavaScript", "CSS"]}
+          author="John Doe"
+          image="/user_placeholder.svg"
+          reply_num={5}
+        />
+      </section>
     </div>
   );
 }
